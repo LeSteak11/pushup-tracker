@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💪 Push Up Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#08080f;--surface:#111118;--surface2:#1c1c28;--surface3:#242434;
+  --accent:#00d4ff;--accent2:#0099cc;--accent-dim:rgba(0,212,255,0.15);
+  --text:#ffffff;--text-dim:#777799;--text-mid:#aaaacc;
+  --success:#00ff88;--warning:#ffaa00;--danger:#ff4466;
+  --nav-h:64px;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;
+}
+
+/* ── SCREENS ─────────────────────────────── */
+#screens{flex:1;overflow-y:auto;overflow-x:hidden;position:relative}
+.screen{display:none;padding:14px 14px calc(var(--nav-h) + 14px);min-height:100%;animation:fadeIn .18s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── XP HEADER ───────────────────────────── */
+.xp-header{
+  background:var(--surface);border-radius:14px;padding:10px 14px;
+  margin-bottom:12px;display:flex;align-items:center;gap:10px;
+}
+.level-badge{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border-radius:9px;padding:5px 10px;font-weight:900;font-size:12px;
+  white-space:nowrap;color:#000;letter-spacing:.5px;flex-shrink:0;
+}
+.xp-info{flex:1;min-width:0}
+.xp-meta{font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between;margin-bottom:4px}
+.xp-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:3px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.streak-pill{
+  font-size:13px;font-weight:800;background:var(--surface2);
+  padding:5px 10px;border-radius:9px;white-space:nowrap;flex-shrink:0;
+}
+
+/* ── TODAY CARD ──────────────────────────── */
+.today-card{
+  background:var(--surface);border-radius:20px;padding:22px 18px 18px;
+  margin-bottom:12px;text-align:center;position:relative;overflow:hidden;
+}
+.today-card::before{
+  content:'';position:absolute;top:-60%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(ellipse at 50% 50%,rgba(0,212,255,.05) 0%,transparent 60%);
+  pointer-events:none;
+}
+.today-lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.today-num{
+  font-size:80px;font-weight:900;line-height:1;
+  color:var(--accent);text-shadow:0 0 48px rgba(0,212,255,.3);
+  transition:color .3s ease;
+}
+.today-num.bumping{animation:bump .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bump{0%{transform:scale(1)}45%{transform:scale(1.13)}100%{transform:scale(1)}}
+.today-unit{font-size:15px;color:var(--text-mid);margin-top:2px}
+
+.goal-area{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  margin-top:16px;padding-top:16px;border-top:1px solid var(--surface2);
+}
+.ring-wrap{position:relative;width:68px;height:68px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg);width:68px;height:68px}
+.ring-label{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:12px;font-weight:900;color:var(--accent);pointer-events:none;
+}
+.goal-info{text-align:left}
+.goal-main{font-size:14px;font-weight:800}
+.goal-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+
+/* ── QUICK ADD ───────────────────────────── */
+.qlabel{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.presets{display:flex;gap:7px;margin-bottom:12px}
+.preset-btn{
+  flex:1;background:var(--surface);border:1.5px solid var(--surface2);
+  border-radius:11px;color:var(--text);font-size:14px;font-weight:800;
+  padding:11px 2px;cursor:pointer;transition:all .12s ease;
+}
+.preset-btn:active{background:var(--accent);color:#000;border-color:var(--accent);transform:scale(.94)}
+
+/* ── ADD SET BTN ─────────────────────────── */
+.add-btn{
+  width:100%;background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border:none;border-radius:16px;color:#000;font-size:19px;font-weight:900;
+  padding:19px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;
+  box-shadow:0 6px 24px rgba(0,212,255,.22);margin-bottom:14px;
+  transition:all .12s ease;
+}
+.add-btn:active{transform:scale(.97);box-shadow:0 3px 12px rgba(0,212,255,.15)}
+
+/* ── SET HISTORY ─────────────────────────── */
+.sec-title{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.sets-list{display:flex;flex-direction:column;gap:7px}
+.set-row{
+  background:var(--surface);border-radius:12px;padding:11px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  animation:fadeIn .18s ease;
+}
+.set-left{display:flex;align-items:center;gap:10px}
+.set-n{font-size:11px;color:var(--text-dim);font-weight:700;min-width:36px}
+.set-count{font-size:22px;font-weight:900;color:var(--accent)}
+.set-reps{font-size:11px;color:var(--text-dim)}
+.set-time{font-size:11px;color:var(--text-dim)}
+.set-del{background:transparent;border:none;color:var(--text-dim);font-size:15px;cursor:pointer;padding:4px 7px;border-radius:7px;line-height:1}
+.set-del:active{color:var(--danger)}
+
+.empty{text-align:center;padding:30px 16px;color:var(--text-dim);font-size:14px}
+.empty-ico{font-size:38px;margin-bottom:8px}
+
+/* ── STATS ───────────────────────────────── */
+.screen-title{font-size:22px;font-weight:900;margin-bottom:14px;padding-top:4px}
+.card{background:var(--surface);border-radius:16px;padding:15px;margin-bottom:12px}
+.card-title{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+
+.week-row{display:flex;gap:9px}
+.week-col{flex:1;background:var(--surface2);border-radius:12px;padding:12px;text-align:center}
+.week-col.this{border:1.5px solid var(--accent)}
+.wval{font-size:28px;font-weight:900;color:var(--accent)}
+.week-col.last .wval{color:var(--text-mid)}
+.wlbl{font-size:11px;color:var(--text-dim);margin-top:3px}
+.week-diff{text-align:center;font-size:13px;font-weight:700;color:var(--success);margin-top:8px}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-cell{background:var(--surface2);border-radius:11px;padding:11px}
+.sval{font-size:26px;font-weight:900;color:var(--accent);line-height:1}
+.slbl{font-size:11px;color:var(--text-dim);margin-top:3px}
+
+.chart-wrap{position:relative}
+canvas{display:block;width:100%}
+
+.month-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--surface2)}
+.month-row:last-child{border:none}
+.mname{width:52px;font-size:12px;color:var(--text-dim);font-weight:600;flex-shrink:0}
+.mtrack{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.mfill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease}
+.mval{width:42px;text-align:right;font-size:12px;font-weight:700;flex-shrink:0}
+
+/* ── ACHIEVEMENTS ────────────────────────── */
+.level-hero{
+  background:linear-gradient(135deg,#0b1e30,#081828);
+  border:1.5px solid var(--accent);border-radius:20px;padding:22px;
+  text-align:center;margin-bottom:12px;position:relative;overflow:hidden;
+}
+.level-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,.1),transparent 70%);
+  pointer-events:none;
+}
+.hero-lvlnum{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.hero-name{font-size:26px;font-weight:900;margin:5px 0}
+.hero-xp{font-size:13px;color:var(--text-dim)}
+.hero-track{height:8px;background:rgba(255,255,255,.08);border-radius:4px;margin:12px 0 6px;overflow:hidden}
+.hero-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:4px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.hero-next{font-size:12px;color:var(--text-dim)}
+
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.badge{
+  background:var(--surface2);border-radius:14px;padding:13px 8px;
+  text-align:center;border:1.5px solid transparent;transition:all .2s ease;
+}
+.badge.unlocked{border-color:rgba(0,212,255,.3);background:linear-gradient(135deg,var(--surface2),#0d1e30)}
+.badge.locked{opacity:.35;filter:grayscale(1)}
+.badge-ico{font-size:26px;margin-bottom:5px}
+.badge-name{font-size:11px;font-weight:800;line-height:1.2}
+.badge-desc{font-size:10px;color:var(--text-dim);margin-top:3px;line-height:1.3}
+.badge-date{font-size:9px;color:var(--accent);margin-top:3px;font-weight:700}
+
+.goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
+.goal-row-lbl{font-size:15px;font-weight:700}
+.goal-inp{
+  background:var(--surface2);border:1.5px solid var(--accent);
+  border-radius:10px;color:var(--text);font-size:20px;font-weight:900;
+  text-align:center;padding:7px 10px;width:78px;outline:none;
+}
+.goal-inp:focus{border-color:var(--accent)}
+
+.data-btns{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.data-btn{
+  flex:1;background:var(--surface2);border:none;color:var(--text);
+  font-size:13px;font-weight:700;padding:12px 8px;border-radius:11px;cursor:pointer;
+}
+.data-btn:active{opacity:.7}
+.data-btn.danger{color:var(--danger)}
+
+/* ── BOTTOM NAV ──────────────────────────── */
+.bottom-nav{
+  height:var(--nav-h);background:var(--surface);
+  border-top:1px solid var(--surface2);display:flex;flex-shrink:0;
+  position:relative;z-index:50;
+}
+.nav-btn{
+  flex:1;background:transparent;border:none;color:var(--text-dim);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;transition:color .15s ease;
+}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px}
+
+/* ── MODAL ───────────────────────────────── */
+.overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:200;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(6px);
+}
+.overlay.open{display:flex;animation:fadeIn .15s ease}
+.sheet{
+  background:var(--surface);border-radius:22px 22px 0 0;padding:24px;
+  width:100%;max-width:480px;animation:slideUp .22s cubic-bezier(.34,1.56,.64,1);
+  padding-bottom:max(24px, env(safe-area-inset-bottom));
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-title{font-size:17px;font-weight:900;text-align:center;margin-bottom:18px}
+.num-input{
+  width:100%;background:var(--surface2);border:2px solid var(--accent);
+  border-radius:13px;color:var(--text);font-size:48px;font-weight:900;
+  text-align:center;padding:14px;outline:none;margin-bottom:14px;
+  -moz-appearance:textfield;
+}
+.num-input::-webkit-inner-spin-button,.num-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.confirm-btn{
+  width:100%;background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border:none;border-radius:13px;color:#000;font-size:17px;font-weight:900;
+  padding:15px;cursor:pointer;margin-bottom:9px;
+}
+.cancel-btn{
+  width:100%;background:transparent;border:none;color:var(--text-dim);
+  font-size:15px;padding:9px;cursor:pointer;
+}
+
+/* ── TOAST ───────────────────────────────── */
+.toast{
+  position:fixed;top:16px;left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  background:var(--surface);border:1.5px solid var(--accent);
+  border-radius:13px;padding:11px 18px;font-size:14px;font-weight:700;
+  z-index:500;max-width:300px;width:calc(100% - 28px);text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── ACHIEVEMENT POPUP ───────────────────── */
+.ach-popup{
+  position:fixed;bottom:calc(var(--nav-h) + 14px);left:50%;
+  transform:translateX(-50%) translateY(160px);
+  background:linear-gradient(135deg,#0c1e30,#081528);
+  border:1.5px solid var(--accent);border-radius:15px;
+  padding:12px 16px;display:flex;align-items:center;gap:11px;
+  z-index:400;max-width:340px;width:calc(100% - 28px);
+  box-shadow:0 6px 28px rgba(0,212,255,.18);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+}
+.ach-popup.show{transform:translateX(-50%) translateY(0)}
+.ach-ico{font-size:30px;flex-shrink:0}
+.ach-tag{font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.ach-name{font-size:14px;font-weight:900;margin:1px 0}
+.ach-desc{font-size:11px;color:var(--text-dim)}
+
+/* ── XP FLOAT ────────────────────────────── */
+.xpfloat{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:22px;font-weight:900;color:var(--accent);
+  pointer-events:none;z-index:600;
+  animation:xprise .9s ease forwards;
+}
+@keyframes xprise{
+  0%{opacity:1;transform:translate(-50%,-50%)}
+  100%{opacity:0;transform:translate(-50%,calc(-50% - 65px))}
+}
+
+/* ── CONFETTI ────────────────────────────── */
+.confetti{
+  position:fixed;width:7px;height:7px;border-radius:2px;
+  pointer-events:none;z-index:700;
+  animation:cfall linear forwards;
+}
+@keyframes cfall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:0}
+}
+
+/* ── GOAL GLOW ───────────────────────────── */
+@keyframes goalGlow{
+  0%,100%{box-shadow:none}
+  50%{box-shadow:0 0 0 10px rgba(0,255,136,.08)}
+}
+.goal-glow{animation:goalGlow 1s ease 3}
+.cat-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cat-hdr-lbl{font-size:11px;font-weight:800;color:var(--text-mid);text-transform:uppercase;letter-spacing:1px}
+.cat-pct{font-size:11px;font-weight:700;color:var(--text-dim)}
+.cat-pct.full{color:var(--success)}
+.bdg-summary{text-align:center;font-size:13px;color:var(--text-dim);padding:10px 14px;background:var(--surface);border-radius:12px;margin-bottom:12px}
+.bdg-summary b{color:var(--accent);font-size:18px}
+</style>
+</head>
+<body>
+
+<!-- ══ SCREENS ═══════════════════════════════════════════════════════ -->
+<div id="screens">
+
+<!-- ── LOG ───────────────────────────────── -->
+<div class="screen active" id="sc-log">
+  <!-- XP Header -->
+  <div class="xp-header">
+    <div class="level-badge" id="lvl-badge">LVL 1</div>
+    <div class="xp-info">
+      <div class="xp-meta">
+        <span id="lvl-name">Beginner</span>
+        <span id="xp-txt">0 / 100 XP</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="streak-pill" id="streak-pill">🔥 0</div>
+  </div>
+
+  <!-- Today Card -->
+  <div class="today-card" id="today-card">
+    <div class="today-lbl">Today</div>
+    <div class="today-num" id="today-num">0</div>
+    <div class="today-unit">pushups</div>
+    <div class="goal-area">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 68 68" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="34" cy="34" r="27" stroke="#1c1c28" stroke-width="6" fill="none"/>
+          <circle id="ring-arc" cx="34" cy="34" r="27" stroke="#00d4ff" stroke-width="6" fill="none"
+            stroke-dasharray="169.6" stroke-dashoffset="169.6" stroke-linecap="round"
+            style="transition:stroke-dashoffset .5s ease,stroke .4s ease"/>
+        </svg>
+        <div class="ring-label" id="ring-pct">0%</div>
+      </div>
+      <div class="goal-info">
+        <div class="goal-main" id="goal-main">0 / 50 goal</div>
+        <div class="goal-sub" id="goal-sub">50 to go</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add -->
+  <div class="qlabel">Quick Add</div>
+  <div class="presets">
+    <button class="preset-btn" data-n="5">+5</button>
+    <button class="preset-btn" data-n="10">+10</button>
+    <button class="preset-btn" data-n="15">+15</button>
+    <button class="preset-btn" data-n="20">+20</button>
+    <button class="preset-btn" data-n="25">+25</button>
+  </div>
+
+  <!-- Add Set -->
+  <button class="add-btn" id="add-btn">+ ADD SET</button>
+
+  <!-- Set History -->
+  <div class="sec-title" id="sets-title">Today's Sets</div>
+  <div class="sets-list" id="sets-list">
+    <div class="empty"><div class="empty-ico">💪</div>Drop and give me some reps!</div>
+  </div>
+</div>
+
+<!-- ── STATS ──────────────────────────────── -->
+<div class="screen" id="sc-stats">
+  <div class="screen-title">Stats</div>
+
+  <div class="card">
+    <div class="card-title">This Week vs Last Week</div>
+    <div class="week-row">
+      <div class="week-col this"><div class="wval" id="wk-this">0</div><div class="wlbl">This Week</div></div>
+      <div class="week-col last"><div class="wval" id="wk-last">0</div><div class="wlbl">Last Week</div></div>
+    </div>
+    <div class="week-diff" id="wk-diff"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">All-Time</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="sval" id="st-total">0</div><div class="slbl">Total Pushups</div></div>
+      <div class="stat-cell"><div class="sval" id="st-best">0</div><div class="slbl">Best Single Day</div></div>
+      <div class="stat-cell"><div class="sval" id="st-bstreak">0</div><div class="slbl">Longest Streak</div></div>
+      <div class="stat-cell"><div class="sval" id="st-avg">0</div><div class="slbl">Avg / Active Day</div></div>
+      <div class="stat-cell"><div class="sval" id="st-sets">0</div><div class="slbl">Total Sets</div></div>
+      <div class="stat-cell"><div class="sval" id="st-days">0</div><div class="slbl">Active Days</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Last 30 Days</div>
+    <div class="chart-wrap"><canvas id="bar-chart" height="150"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Monthly Totals</div>
+    <div id="monthly"></div>
+  </div>
+</div>
+
+<!-- ── ACHIEVEMENTS ───────────────────────── -->
+<div class="screen" id="sc-achievements">
+  <div class="screen-title">Achievements</div>
+
+  <div class="level-hero">
+    <div class="hero-lvlnum" id="h-lvlnum">LEVEL 1</div>
+    <div class="hero-name" id="h-name">Beginner</div>
+    <div class="hero-xp" id="h-xp">0 XP total</div>
+    <div class="hero-track"><div class="hero-fill" id="h-fill" style="width:0%"></div></div>
+    <div class="hero-next" id="h-next">0 / 100 XP to next level</div>
+  </div>
+
+  <div class="bdg-summary" id="bdg-summary">— / — badges</div>
+  <div id="badge-cats"></div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Daily Goal</div>
+    <div class="goal-row">
+      <div>
+        <div class="goal-row-lbl">Daily target</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Pushups to hit per day</div>
+      </div>
+      <input type="number" class="goal-inp" id="goal-inp" value="50" min="1" max="9999">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Data</div>
+    <div class="data-btns">
+      <button class="data-btn" id="export-btn">📤 Export JSON</button>
+      <button class="data-btn" id="import-btn">📥 Import JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none">
+      <button class="data-btn danger" id="reset-btn">🗑️ Reset All</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /screens -->
+
+<!-- ══ BOTTOM NAV ════════════════════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-screen="log" id="nav-log">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    Log
+  </button>
+  <button class="nav-btn" data-screen="stats" id="nav-stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    Stats
+  </button>
+  <button class="nav-btn" data-screen="achievements" id="nav-achievements">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+    </svg>
+    Badges
+  </button>
+</nav>
+
+<!-- ══ MODAL ══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-title">How many reps?</div>
+    <input type="number" class="num-input" id="num-input" placeholder="15" min="1" max="9999">
+    <button class="confirm-btn" id="confirm-btn">✓ Log Set</button>
+    <button class="cancel-btn" id="cancel-btn">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ ACHIEVEMENT POPUP ══════════════════════════════════════════════ -->
+<div class="ach-popup" id="ach-popup">
+  <div class="ach-ico" id="ach-ico">🏆</div>
+  <div>
+    <div class="ach-tag">Achievement Unlocked!</div>
+    <div class="ach-name" id="ach-name">–</div>
+    <div class="ach-desc" id="ach-desc">–</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════
+const NS = 'pu_';
+
+const LEVELS = [
+  {n:1, xp:0,     name:'Beginner'},
+  {n:2, xp:100,   name:'Rookie'},
+  {n:3, xp:250,   name:'Trainee'},
+  {n:4, xp:500,   name:'Iron Arms'},
+  {n:5, xp:900,   name:'Steel Chest'},
+  {n:6, xp:1500,  name:'Power Pusher'},
+  {n:7, xp:2400,  name:'Beast Mode'},
+  {n:8, xp:3800,  name:'Elite'},
+  {n:9, xp:6000,  name:'Legend'},
+  {n:10,xp:9500,  name:'Titan'},
+  {n:11,xp:15000, name:'Demigod'},
+  {n:12,xp:23000, name:'Immortal'},
+];
+
+const CATS = [
+  {id:'totals',      label:'💪 Total Pushups'},
+  {id:'sets',        label:'📋 Sets Logged'},
+  {id:'streaks',     label:'🔥 Streaks'},
+  {id:'daily',       label:'📅 Daily Performance'},
+  {id:'consistency', label:'🎯 Consistency'},
+  {id:'lifestyle',   label:'🌅 Lifestyle'},
+  {id:'secret',      label:'🔒 Secrets'},
+];
+
+const BADGES = [
+  // ── TOTAL PUSHUP CHAIN (13) ─────────────────────────────────────────
+  {id:'first',    cat:'totals', ico:'🥉', name:'First Rep',        desc:'Log your very first set'},
+  {id:'tot100',   cat:'totals', ico:'💪', name:'Century',          desc:'100 total pushups'},
+  {id:'tot500',   cat:'totals', ico:'🏅', name:'500 Club',         desc:'500 total pushups'},
+  {id:'tot1k',    cat:'totals', ico:'🏋️', name:'1,000 Club',       desc:'1,000 total pushups'},
+  {id:'tot2500',  cat:'totals', ico:'⚔️', name:'2,500 Warrior',    desc:'2,500 total pushups'},
+  {id:'tot5k',    cat:'totals', ico:'🦍', name:'5K Beast',         desc:'5,000 total pushups'},
+  {id:'tot10k',   cat:'totals', ico:'🔱', name:'10K Legend',       desc:'10,000 total pushups'},
+  {id:'tot25k',   cat:'totals', ico:'💎', name:'25K Diamond',      desc:'25,000 total pushups'},
+  {id:'tot50k',   cat:'totals', ico:'🌟', name:'50K Star',         desc:'50,000 total pushups'},
+  {id:'tot100k',  cat:'totals', ico:'👑', name:'100K King',        desc:'100,000 total pushups'},
+  {id:'tot250k',  cat:'totals', ico:'🏆', name:'Quarter Million',  desc:'250,000 total pushups'},
+  {id:'tot500k',  cat:'totals', ico:'🌌', name:'Half Million',     desc:'500,000 total pushups'},
+  {id:'tot1m',    cat:'totals', ico:'🚀', name:'One Million',      desc:'1,000,000 total pushups'},
+
+  // ── SETS LOGGED CHAIN (8) ────────────────────────────────────────────
+  {id:'sets10',   cat:'sets', ico:'📝', name:'Logging In',        desc:'10 sets logged total'},
+  {id:'sets25',   cat:'sets', ico:'📋', name:'Getting Serious',   desc:'25 sets logged total'},
+  {id:'sets50',   cat:'sets', ico:'📚', name:'50-Set Club',       desc:'50 sets logged total'},
+  {id:'sets100',  cat:'sets', ico:'📦', name:'100 Sets',          desc:'100 sets logged total'},
+  {id:'sets250',  cat:'sets', ico:'🗄️', name:'250 Sets',          desc:'250 sets logged total'},
+  {id:'sets500',  cat:'sets', ico:'🏗️', name:'500 Sets',          desc:'500 sets logged total'},
+  {id:'sets1k',   cat:'sets', ico:'🏭', name:'1,000 Sets',        desc:'1,000 sets logged total'},
+  {id:'sets5k',   cat:'sets', ico:'🌍', name:'5,000 Sets',        desc:'5,000 sets logged total'},
+
+  // ── STREAK CHAIN (9) ─────────────────────────────────────────────────
+  {id:'str3',     cat:'streaks', ico:'🔥',         name:'3-Day Streak',     desc:'3 days in a row'},
+  {id:'str7',     cat:'streaks', ico:'🔥🔥',       name:'7-Day Streak',     desc:'7 days in a row'},
+  {id:'str14',    cat:'streaks', ico:'🔥🔥',       name:'14-Day Streak',    desc:'2 weeks straight'},
+  {id:'str21',    cat:'streaks', ico:'🔥🔥🔥',     name:'21-Day Streak',    desc:'3 weeks straight'},
+  {id:'str30',    cat:'streaks', ico:'💫',          name:'30-Day Streak',    desc:'A full month straight'},
+  {id:'str60',    cat:'streaks', ico:'⚡',           name:'60-Day Streak',    desc:'2 months straight'},
+  {id:'str90',    cat:'streaks', ico:'🌊',           name:'90-Day Streak',    desc:'3 months straight'},
+  {id:'str180',   cat:'streaks', ico:'🌟',           name:'6-Month Streak',   desc:'180 days straight'},
+  {id:'str365',   cat:'streaks', ico:'👑',           name:'Full Year',        desc:'365 consecutive days!'},
+
+  // ── DAILY TOTAL (6) + SINGLE SET (3) ────────────────────────────────
+  {id:'day50',    cat:'daily', ico:'✨', name:'50 in a Day',      desc:'50 pushups in one day'},
+  {id:'day100',   cat:'daily', ico:'💯', name:'Century Day',      desc:'100 pushups in one day'},
+  {id:'day150',   cat:'daily', ico:'🎯', name:'150 in a Day',     desc:'150 pushups in one day'},
+  {id:'day200',   cat:'daily', ico:'🔥', name:'200 in a Day',     desc:'200 pushups in one day'},
+  {id:'day300',   cat:'daily', ico:'💪', name:'300 in a Day',     desc:'300 pushups in one day'},
+  {id:'day500',   cat:'daily', ico:'🚀', name:'500 in a Day',     desc:'500 pushups in one day'},
+  {id:'set50',    cat:'daily', ico:'💥', name:'50-Rep Set',       desc:'50 reps in a single set'},
+  {id:'set100',   cat:'daily', ico:'🔱', name:'100-Rep Set',      desc:'100 reps in a single set'},
+  {id:'set200',   cat:'daily', ico:'🦁', name:'200-Rep Set',      desc:'200 reps in a single set'},
+
+  // ── CONSISTENCY (9) ──────────────────────────────────────────────────
+  {id:'wk7',      cat:'consistency', ico:'📅', name:'Perfect Week',    desc:'Active all 7 days of a week'},
+  {id:'month_pf', cat:'consistency', ico:'🗓️', name:'Perfect Month',   desc:'Active every day of a calendar month'},
+  {id:'goal5',    cat:'consistency', ico:'🎯', name:'Goal Crusher',    desc:'Hit daily goal 5 days running'},
+  {id:'goal10',   cat:'consistency', ico:'🎯🎯', name:'Goal Machine',  desc:'Hit daily goal 10 days running'},
+  {id:'goal30',   cat:'consistency', ico:'🎯🎯🎯',name:'Goal God',     desc:'Hit daily goal 30 days running'},
+  {id:'wk250',    cat:'consistency', ico:'📊', name:'250-Rep Week',    desc:'250 pushups in one week'},
+  {id:'wk500',    cat:'consistency', ico:'📊', name:'500-Rep Week',    desc:'500 pushups in one week'},
+  {id:'wk1k',     cat:'consistency', ico:'📊', name:'1K Week',         desc:'1,000 pushups in one week'},
+  {id:'wk2k',     cat:'consistency', ico:'📊', name:'2K Week',         desc:'2,000 pushups in one week'},
+
+  // ── LIFESTYLE (10) ───────────────────────────────────────────────────
+  {id:'morn50',   cat:'lifestyle', ico:'⚡', name:'Morning Rush',    desc:'50 pushups before noon'},
+  {id:'night',    cat:'lifestyle', ico:'🌙', name:'Night Warrior',   desc:'Logged a set after 10pm'},
+  {id:'earlybird',cat:'lifestyle', ico:'🌅', name:'Early Bird',      desc:'Logged a set before 6am'},
+  {id:'nightowl', cat:'lifestyle', ico:'🦉', name:'Night Owl',       desc:'Logged a set after midnight'},
+  {id:'lunchgrnd',cat:'lifestyle', ico:'🥪', name:'Lunch Grinder',   desc:'Logged a set between noon–1pm'},
+  {id:'comeback', cat:'lifestyle', ico:'🔄', name:'Comeback Kid',    desc:'Logged after 7+ days off'},
+  {id:'doubledn', cat:'lifestyle', ico:'📈', name:'Double Down',     desc:'Beat yesterday\'s total'},
+  {id:'weekend',  cat:'lifestyle', ico:'🏖️', name:'Weekend Warrior', desc:'Active both Sat & Sun in a weekend'},
+  {id:'sets5day', cat:'lifestyle', ico:'🖐️', name:'5-Set Day',       desc:'Log 5+ sets in one day'},
+  {id:'sets10day',cat:'lifestyle', ico:'🙌', name:'10-Set Day',      desc:'Log 10+ sets in one day'},
+
+  // ── SECRET (8) ───────────────────────────────────────────────────────
+  {id:'sec_42',   cat:'secret', secret:true, ico:'🌀', name:'The Answer',      desc:'42. You know why.'},
+  {id:'sec_jan1', cat:'secret', secret:true, ico:'🎊', name:'New Year Grind',  desc:'Log a set on January 1st'},
+  {id:'sec_mid',  cat:'secret', secret:true, ico:'🕛', name:'Midnight Rep',    desc:'Log a set between midnight and 1am'},
+  {id:'sec_speed',cat:'secret', secret:true, ico:'⏱️', name:'Speed Demon',     desc:'3 sets logged within 1 hour'},
+  {id:'sec_1111', cat:'secret', secret:true, ico:'✨', name:'11:11',           desc:'Log a set at exactly 11:11am'},
+  {id:'sec_palin',cat:'secret', secret:true, ico:'🔄', name:'Palindrome',      desc:'Log a set count that reads same forwards & backwards (e.g. 11, 22, 121)'},
+  {id:'sec_lucky7',cat:'secret',secret:true, ico:'🎰', name:'Lucky 7s',        desc:'Log exactly 7 sets in one day'},
+  {id:'sec_3x',   cat:'secret', secret:true, ico:'🎭', name:'Overachiever',    desc:'Hit 3× your daily goal in one day'},
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+let sets = [];
+let cfg  = {goal: 50};
+let earned = {};
+let idCtr = 0;
+
+// ═══════════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════════
+function persist() {
+  localStorage.setItem(NS+'sets', JSON.stringify(sets));
+  localStorage.setItem(NS+'cfg',  JSON.stringify(cfg));
+  localStorage.setItem(NS+'earned', JSON.stringify(earned));
+  localStorage.setItem(NS+'idc', idCtr);
+}
+
+function restore() {
+  try { sets   = JSON.parse(localStorage.getItem(NS+'sets')   || '[]'); }   catch(e){ sets=[]; }
+  try { cfg    = JSON.parse(localStorage.getItem(NS+'cfg')    || '{"goal":50}'); } catch(e){ cfg={goal:50}; }
+  try { earned = JSON.parse(localStorage.getItem(NS+'earned') || '{}'); }  catch(e){ earned={}; }
+  idCtr = parseInt(localStorage.getItem(NS+'idc') || '0') || 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function ds(ts) {
+  const d = new Date(ts);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+const today = () => ds(Date.now());
+
+function dailyMap() {
+  const m = {};
+  for (const s of sets) m[s.date] = (m[s.date]||0) + s.count;
+  return m;
+}
+
+function todaySets() {
+  const t = today();
+  return sets.filter(s => s.date === t);
+}
+
+function todayTotal() {
+  return todaySets().reduce((a,s) => a+s.count, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// XP / LEVEL
+// ═══════════════════════════════════════════════════════════════════════
+function totalXP() { return sets.reduce((a,s) => a+s.count, 0); }
+
+function levelInfo() {
+  const xp = totalXP();
+  let cur = LEVELS[0];
+  for (const l of LEVELS) { if (xp >= l.xp) cur=l; else break; }
+  const idx = LEVELS.indexOf(cur);
+  const nxt = LEVELS[idx+1];
+  const inLvl = xp - cur.xp;
+  const need  = nxt ? nxt.xp - cur.xp : 1;
+  const pct   = nxt ? Math.min(100, (inLvl/need)*100) : 100;
+  return {lvl:cur.n, name:cur.name, xp, inLvl, need, pct, nxt};
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STREAK
+// ═══════════════════════════════════════════════════════════════════════
+function streakInfo() {
+  const dm = dailyMap();
+  const days = Object.keys(dm).sort();
+  if (!days.length) return {cur:0, best:0};
+
+  // best streak
+  let best=1, run=1;
+  for (let i=1;i<days.length;i++){
+    const a = new Date(days[i-1]+'T12:00:00');
+    const b = new Date(days[i]+'T12:00:00');
+    if ((b-a)/86400000 === 1) { run++; if(run>best) best=run; } else run=1;
+  }
+  if (days.length===1) best=1;
+
+  // current streak (must include today or yesterday)
+  const t = today();
+  const y = ds(Date.now()-86400000);
+  let cur=0;
+  if (dm[t] || dm[y]) {
+    let d = dm[t] ? new Date() : new Date(Date.now()-86400000);
+    for (;;) {
+      if (dm[ds(d.getTime())]) { cur++; d = new Date(d.getTime()-86400000); }
+      else break;
+    }
+  }
+  best = Math.max(best, cur);
+  return {cur, best};
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEEK HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function weekDays(d) {
+  const day = d.getDay();
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - (day===0?6:day-1));
+  return Array.from({length:7},(_,i)=>{ const x=new Date(mon); x.setDate(mon.getDate()+i); return x; });
+}
+
+function goalHitStreak() {
+  const dm = dailyMap();
+  let n=0;
+  for (let i=0;i<60;i++){
+    const d = ds(Date.now()-i*86400000);
+    if ((dm[d]||0) >= cfg.goal) n++;
+    else break;
+  }
+  return n;
+}
+
+function bestSingleSet() {
+  return sets.length ? Math.max(...sets.map(s=>s.count)) : 0;
+}
+
+function bestWeekTotal() {
+  const dm = dailyMap();
+  if (!Object.keys(dm).length) return 0;
+  const wm = {};
+  for (const [day,val] of Object.entries(dm)) {
+    const wk = weekDays(new Date(day+'T12:00:00'));
+    const key = ds(wk[0].getTime());
+    wm[key] = (wm[key]||0)+val;
+  }
+  return Math.max(...Object.values(wm));
+}
+
+function hasPerfectWeek() {
+  const dm = dailyMap();
+  const wm = {};
+  for (const day of Object.keys(dm)) {
+    const wk = weekDays(new Date(day+'T12:00:00'));
+    const key = ds(wk[0].getTime());
+    if (!wm[key]) wm[key]=new Set();
+    wm[key].add(day);
+  }
+  for (const [key,days] of Object.entries(wm)) {
+    const wkDays = weekDays(new Date(key+'T12:00:00')).map(d=>ds(d.getTime()));
+    if (wkDays.every(d=>dm[d])) return true;
+  }
+  return false;
+}
+
+function hasPerfectMonth() {
+  const dm = dailyMap();
+  const mm = {};
+  for (const day of Object.keys(dm)) {
+    const [y,mo,d2] = day.split('-');
+    const key = y+'-'+mo;
+    if (!mm[key]) mm[key]=new Set();
+    mm[key].add(parseInt(d2));
+  }
+  for (const [key,days] of Object.entries(mm)) {
+    const [y,mo] = key.split('-');
+    const dim = new Date(parseInt(y),parseInt(mo),0).getDate();
+    if (days.size===dim) return true;
+  }
+  return false;
+}
+
+function hasWeekendWarrior() {
+  const dm = dailyMap();
+  for (const day of Object.keys(dm)) {
+    const d = new Date(day+'T12:00:00');
+    if (d.getDay()===6) {
+      const sun = ds(new Date(d.getTime()+86400000).getTime());
+      if (dm[sun]) return true;
+    }
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════════════════════
+function checkAchievements(newSet) {
+  const xp    = totalXP();
+  const str   = streakInfo();
+  const tt    = todayTotal();
+  const dm    = dailyMap();
+  const bss   = bestSingleSet();
+  const bwt   = bestWeekTotal();
+  const ns    = sets.length;
+  const newly = [];
+
+  function unlock(id) {
+    if (!earned[id]) { earned[id]=Date.now(); newly.push(id); }
+  }
+
+  // ── Total pushup chain ──
+  if (xp>=1)       unlock('first');
+  if (xp>=100)     unlock('tot100');
+  if (xp>=500)     unlock('tot500');
+  if (xp>=1000)    unlock('tot1k');
+  if (xp>=2500)    unlock('tot2500');
+  if (xp>=5000)    unlock('tot5k');
+  if (xp>=10000)   unlock('tot10k');
+  if (xp>=25000)   unlock('tot25k');
+  if (xp>=50000)   unlock('tot50k');
+  if (xp>=100000)  unlock('tot100k');
+  if (xp>=250000)  unlock('tot250k');
+  if (xp>=500000)  unlock('tot500k');
+  if (xp>=1000000) unlock('tot1m');
+
+  // ── Sets logged chain ──
+  if (ns>=10)   unlock('sets10');
+  if (ns>=25)   unlock('sets25');
+  if (ns>=50)   unlock('sets50');
+  if (ns>=100)  unlock('sets100');
+  if (ns>=250)  unlock('sets250');
+  if (ns>=500)  unlock('sets500');
+  if (ns>=1000) unlock('sets1k');
+  if (ns>=5000) unlock('sets5k');
+
+  // ── Streak chain ──
+  if (str.cur>=3)   unlock('str3');
+  if (str.cur>=7)   unlock('str7');
+  if (str.cur>=14)  unlock('str14');
+  if (str.cur>=21)  unlock('str21');
+  if (str.cur>=30)  unlock('str30');
+  if (str.cur>=60)  unlock('str60');
+  if (str.cur>=90)  unlock('str90');
+  if (str.cur>=180) unlock('str180');
+  if (str.cur>=365) unlock('str365');
+
+  // ── Daily total chain ──
+  if (tt>=50)  unlock('day50');
+  if (tt>=100) unlock('day100');
+  if (tt>=150) unlock('day150');
+  if (tt>=200) unlock('day200');
+  if (tt>=300) unlock('day300');
+  if (tt>=500) unlock('day500');
+
+  // ── Single set records ──
+  if (bss>=50)  unlock('set50');
+  if (bss>=100) unlock('set100');
+  if (bss>=200) unlock('set200');
+
+  // ── Consistency ──
+  if (hasPerfectWeek())  unlock('wk7');
+  if (hasPerfectMonth()) unlock('month_pf');
+  const gs = goalHitStreak();
+  if (gs>=5)  unlock('goal5');
+  if (gs>=10) unlock('goal10');
+  if (gs>=30) unlock('goal30');
+  if (bwt>=250)  unlock('wk250');
+  if (bwt>=500)  unlock('wk500');
+  if (bwt>=1000) unlock('wk1k');
+  if (bwt>=2000) unlock('wk2k');
+
+  // ── Lifestyle ──
+  if (hasWeekendWarrior()) unlock('weekend');
+  const yest = ds(Date.now()-86400000);
+  if (tt>(dm[yest]||0) && (dm[yest]||0)>0) unlock('doubledn');
+  const tsCount = todaySets().length;
+  if (tsCount>=5)  unlock('sets5day');
+  if (tsCount>=7)  unlock('sec_lucky7');
+  if (tsCount>=10) unlock('sets10day');
+  if (cfg.goal>0 && tt>=cfg.goal*3) unlock('sec_3x');
+
+  // ── New-set-specific ──
+  if (newSet) {
+    const d2  = new Date(newSet.ts);
+    const h   = d2.getHours();
+    const min = d2.getMinutes();
+
+    if (h>=22)            unlock('night');
+    if (h<6)              unlock('earlybird');
+    if (h===0)            unlock('nightowl');
+    if (h===12)           unlock('lunchgrnd');
+    if (h===11&&min===11) unlock('sec_1111');
+    if (h===0)            unlock('sec_mid');
+
+    if (d2.getMonth()===0&&d2.getDate()===1) unlock('sec_jan1');
+    if (newSet.count===42) unlock('sec_42');
+    const cs=newSet.count.toString();
+    if (cs.length>1&&cs===[...cs].reverse().join('')) unlock('sec_palin');
+
+    const mornTotal=sets
+      .filter(s=>s.date===today()&&new Date(s.ts).getHours()<12)
+      .reduce((a,s)=>a+s.count,0);
+    if (mornTotal>=50) unlock('morn50');
+
+    // Comeback: last active day before today was 7+ days ago
+    const prevDays=Object.keys(dm).filter(d3=>d3<today()).sort().reverse();
+    if (prevDays.length>0) {
+      const gap=(new Date(today()+'T12:00:00')-new Date(prevDays[0]+'T12:00:00'))/86400000;
+      if (gap>=7) unlock('comeback');
+    }
+
+    // Speed demon: 3+ sets logged within last hour
+    const cutoff=newSet.ts-3600000;
+    if (sets.filter(s=>s.ts>=cutoff&&s.date===today()).length>=3) unlock('sec_speed');
+  }
+
+  return newly;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ADDING SETS
+// ═══════════════════════════════════════════════════════════════════════
+function addSet(count) {
+  const now = Date.now();
+  const set = {id: ++idCtr, date: today(), count, ts: now};
+  sets.push(set);
+
+  const prevTotal = todayTotal() - count;
+  const newlyUnlocked = checkAchievements(set);
+  persist();
+
+  renderLog();
+  xpFloat(count);
+  bumpNum();
+
+  if (todayTotal() >= cfg.goal && prevTotal < cfg.goal) fireGoalHit();
+
+  if (newlyUnlocked.length) {
+    newlyUnlocked.forEach((id,i) => setTimeout(()=>showAchPop(id), 600+i*2400));
+  }
+}
+
+function deleteSet(id) {
+  sets = sets.filter(s=>s.id!==id);
+  persist();
+  renderLog();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER — LOG SCREEN
+// ═══════════════════════════════════════════════════════════════════════
+function renderLog() {
+  const tt  = todayTotal();
+  const ts  = todaySets();
+  const li  = levelInfo();
+  const str = streakInfo();
+  const g   = cfg.goal;
+  const pct = Math.min(100, (tt/g)*100);
+  const circ = 169.6;
+
+  // Today number
+  document.getElementById('today-num').textContent = tt;
+
+  // Goal ring
+  const arc = document.getElementById('ring-arc');
+  arc.style.strokeDashoffset = circ - (circ * pct / 100);
+  arc.style.stroke = pct>=100 ? '#00ff88' : '#00d4ff';
+  document.getElementById('ring-pct').textContent  = Math.round(pct)+'%';
+  document.getElementById('goal-main').textContent = tt+' / '+g+' goal';
+  const left = Math.max(0, g-tt);
+  document.getElementById('goal-sub').textContent  = left===0 ? '🎉 Goal hit!' : left+' to go';
+
+  // XP bar
+  document.getElementById('lvl-badge').textContent = 'LVL '+li.lvl;
+  document.getElementById('lvl-name').textContent  = li.name;
+  document.getElementById('xp-txt').textContent    = li.nxt ? li.inLvl+' / '+li.need+' XP' : 'MAX';
+  document.getElementById('xp-fill').style.width   = li.pct+'%';
+
+  // Streak
+  document.getElementById('streak-pill').textContent = '🔥 '+str.cur;
+
+  // Sets list
+  const list = document.getElementById('sets-list');
+  if (!ts.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-ico">💪</div>Drop and give me some reps!</div>';
+    document.getElementById('sets-title').textContent = "Today's Sets";
+    return;
+  }
+  document.getElementById('sets-title').textContent = "Today's Sets ("+ts.length+")";
+  const sorted = [...ts].sort((a,b)=>b.ts-a.ts);
+  list.innerHTML = sorted.map((s,i)=>{
+    const num = ts.length - i;
+    const t   = new Date(s.ts);
+    const tm  = t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return `<div class="set-row">
+      <div class="set-left">
+        <div class="set-n">Set ${num}</div>
+        <div><span class="set-count">${s.count}</span> <span class="set-reps">reps</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="set-time">${tm}</div>
+        <button class="set-del" data-id="${s.id}">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER — STATS SCREEN
+// ═══════════════════════════════════════════════════════════════════════
+function renderStats() {
+  const dm  = dailyMap();
+  const str = streakInfo();
+  const now = new Date();
+  const wd  = weekDays(now);
+  const lwd = weekDays(new Date(Date.now()-7*86400000));
+
+  const thisWk = wd.reduce((a,d)=>a+(dm[ds(d.getTime())]||0),0);
+  const lastWk = lwd.reduce((a,d)=>a+(dm[ds(d.getTime())]||0),0);
+  document.getElementById('wk-this').textContent = thisWk;
+  document.getElementById('wk-last').textContent = lastWk;
+  const diff = thisWk-lastWk;
+  const diffEl = document.getElementById('wk-diff');
+  if      (diff>0) { diffEl.textContent='▲ +'+diff+' vs last week'; diffEl.style.color='var(--success)'; }
+  else if (diff<0) { diffEl.textContent='▼ '+diff+' vs last week';  diffEl.style.color='var(--danger)'; }
+  else             { diffEl.textContent='= Same as last week';       diffEl.style.color='var(--text-dim)'; }
+
+  // All-time
+  const vals = Object.values(dm);
+  const total  = vals.reduce((a,v)=>a+v,0);
+  const best   = vals.length ? Math.max(...vals) : 0;
+  const avg    = vals.length ? Math.round(total/vals.length) : 0;
+  document.getElementById('st-total').textContent   = total.toLocaleString();
+  document.getElementById('st-best').textContent    = best.toLocaleString();
+  document.getElementById('st-bstreak').textContent = str.best;
+  document.getElementById('st-avg').textContent     = avg;
+  document.getElementById('st-sets').textContent    = sets.length;
+  document.getElementById('st-days').textContent    = Object.keys(dm).length;
+
+  drawBarChart();
+  drawMonthly();
+}
+
+function drawBarChart() {
+  const canvas = document.getElementById('bar-chart');
+  const ctx    = canvas.getContext('2d');
+  const dpr    = window.devicePixelRatio || 1;
+  const w      = canvas.parentElement.clientWidth;
+  const h      = 150;
+  canvas.style.width  = w+'px';
+  canvas.style.height = h+'px';
+  canvas.width  = w*dpr;
+  canvas.height = h*dpr;
+  ctx.scale(dpr,dpr);
+
+  const dm = dailyMap();
+  const days = [];
+  for (let i=29;i>=0;i--) {
+    const d = new Date(Date.now()-i*86400000);
+    days.push({ds_:ds(d.getTime()), val:dm[ds(d.getTime())]||0, d});
+  }
+
+  const maxV = Math.max(...days.map(d=>d.val), cfg.goal, 1);
+  const pad  = 10;
+  const bw   = (w-pad*2)/30-2;
+  const ch   = h-22;
+  ctx.clearRect(0,0,w,h);
+
+  const today_ = today();
+  days.forEach((day,i)=>{
+    const x  = pad + i*((w-pad*2)/30);
+    const bh = (day.val/maxV)*(ch-6);
+    const y  = ch-bh;
+    const isT = day.ds_===today_;
+
+    if (day.val>0) {
+      const g2 = ctx.createLinearGradient(0,y,0,ch);
+      if (isT) { g2.addColorStop(0,'#00d4ff'); g2.addColorStop(1,'#0066bb'); }
+      else      { g2.addColorStop(0,'rgba(0,153,204,.7)'); g2.addColorStop(1,'rgba(0,80,160,.35)'); }
+      ctx.fillStyle = g2;
+      // rounded top
+      const r = Math.min(3,bw/2);
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.lineTo(x+bw-r,y);
+      ctx.quadraticCurveTo(x+bw,y,x+bw,y+r);
+      ctx.lineTo(x+bw,ch);
+      ctx.lineTo(x,ch);
+      ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (i%5===0||isT) {
+      ctx.fillStyle  = isT ? '#00d4ff' : 'rgba(119,119,153,.7)';
+      ctx.font       = (isT?'700 ':'400 ')+'10px -apple-system,sans-serif';
+      ctx.textAlign  = 'center';
+      ctx.fillText(isT ? 'Today' : (day.d.getMonth()+1)+'/'+day.d.getDate(), x+bw/2, h-4);
+    }
+  });
+
+  // goal line
+  const gy = ch-(cfg.goal/maxV)*(ch-6);
+  if (gy>4 && gy<ch) {
+    ctx.strokeStyle = 'rgba(0,255,136,.35)';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(pad,gy); ctx.lineTo(w-pad,gy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawMonthly() {
+  const dm = dailyMap();
+  const mm = {};
+  for (const [d,v] of Object.entries(dm)) { const m=d.slice(0,7); mm[m]=(mm[m]||0)+v; }
+  const months = Object.keys(mm).sort().reverse().slice(0,12);
+  const maxV   = Math.max(...Object.values(mm),1);
+  const MON    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const el     = document.getElementById('monthly');
+  if (!months.length) { el.innerHTML='<div class="empty" style="padding:16px">No data yet</div>'; return; }
+  el.innerHTML = months.map(m=>{
+    const [yr,mo] = m.split('-');
+    const label   = MON[parseInt(mo)-1]+' '+yr;
+    const v       = mm[m];
+    const pct     = (v/maxV)*100;
+    return `<div class="month-row">
+      <div class="mname">${label.slice(0,7)}</div>
+      <div class="mtrack"><div class="mfill" style="width:${pct}%"></div></div>
+      <div class="mval">${v.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER — ACHIEVEMENTS SCREEN
+// ═══════════════════════════════════════════════════════════════════════
+function renderAchievements() {
+  const li = levelInfo();
+  document.getElementById('h-lvlnum').textContent = 'LEVEL '+li.lvl;
+  document.getElementById('h-name').textContent   = li.name;
+  document.getElementById('h-xp').textContent     = li.xp.toLocaleString()+' XP total';
+  document.getElementById('h-fill').style.width   = li.pct+'%';
+  document.getElementById('h-next').textContent   = li.nxt
+    ? li.inLvl.toLocaleString()+' / '+li.need.toLocaleString()+' XP to Level '+(li.lvl+1)
+    : 'MAX LEVEL ACHIEVED 🏆';
+
+  document.getElementById('goal-inp').value = cfg.goal;
+
+  // Badge summary
+  const totalBadges   = BADGES.length;
+  const earnedBadges  = BADGES.filter(b=>earned[b.id]).length;
+  document.getElementById('bdg-summary').innerHTML =
+    `<b>${earnedBadges}</b> / ${totalBadges} badges unlocked`;
+
+  // Render by category
+  const cats = document.getElementById('badge-cats');
+  cats.innerHTML = CATS.map(cat=>{
+    const catBadges = BADGES.filter(b=>b.cat===cat.id);
+    const nUnlocked = catBadges.filter(b=>earned[b.id]).length;
+    const full      = nUnlocked===catBadges.length;
+    const pctStr    = nUnlocked+'/'+catBadges.length;
+    const badgesHtml = catBadges.map(b=>{
+      const u         = earned[b.id];
+      const isSecret  = b.secret && !u;
+      const dateLbl   = u ? new Date(u).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+      return `<div class="badge ${u?'unlocked':'locked'}">
+        <div class="badge-ico">${isSecret?'🔒':b.ico}</div>
+        <div class="badge-name">${isSecret?'???':b.name}</div>
+        <div class="badge-desc">${isSecret?'Hidden achievement':b.desc}</div>
+        ${u?`<div class="badge-date">✓ ${dateLbl}</div>`:''}
+      </div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:12px">
+      <div class="cat-hdr">
+        <span class="cat-hdr-lbl">${cat.label}</span>
+        <span class="cat-pct ${full?'full':''}">${pctStr}</span>
+      </div>
+      <div class="badges-grid">${badgesHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCREEN SWITCHING
+// ═══════════════════════════════════════════════════════════════════════
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sc-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  document.getElementById('screens').scrollTop = 0;
+  if (name==='stats')        renderStats();
+  if (name==='achievements') renderAchievements();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════════════
+function openModal() {
+  const ov = document.getElementById('overlay');
+  const inp= document.getElementById('num-input');
+  ov.classList.add('open');
+  inp.value='';
+  setTimeout(()=>inp.focus(),80);
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function confirmModal() {
+  const v = parseInt(document.getElementById('num-input').value);
+  if (!v||v<1) { showToast('⚠️ Enter a number first!'); return; }
+  closeModal();
+  addSet(v);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+let toastTmr;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+let achQueue=[], achBusy=false, achTmr;
+function showAchPop(id) { achQueue.push(id); if(!achBusy) drainAchQueue(); }
+function drainAchQueue() {
+  if (!achQueue.length) { achBusy=false; return; }
+  achBusy=true;
+  const id = achQueue.shift();
+  const b  = BADGES.find(x=>x.id===id);
+  if (!b)  { drainAchQueue(); return; }
+  document.getElementById('ach-ico').textContent  = b.ico;
+  document.getElementById('ach-name').textContent = b.name;
+  document.getElementById('ach-desc').textContent = b.desc;
+  const popup = document.getElementById('ach-popup');
+  popup.classList.add('show');
+  clearTimeout(achTmr);
+  achTmr = setTimeout(()=>{ popup.classList.remove('show'); setTimeout(drainAchQueue,350); }, 2200);
+}
+
+function xpFloat(n) {
+  const el = document.createElement('div');
+  el.className='xpfloat';
+  el.textContent='+'+n+' XP';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
+
+function bumpNum() {
+  const el = document.getElementById('today-num');
+  el.classList.remove('bumping');
+  void el.offsetWidth;
+  el.classList.add('bumping');
+}
+
+function fireGoalHit() {
+  showToast('🎉 Daily goal smashed!');
+  const card = document.getElementById('today-card');
+  card.classList.remove('goal-glow');
+  void card.offsetWidth;
+  card.classList.add('goal-glow');
+  // confetti
+  const colors=['#00d4ff','#00ff88','#ffaa00','#ff4488','#fff'];
+  for(let i=0;i<32;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.cssText=`left:${Math.random()*100}vw;top:-8px;background:${colors[i%colors.length]};animation-duration:${1.2+Math.random()*1.6}s;animation-delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3200);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS / DATA
+// ═══════════════════════════════════════════════════════════════════════
+function updateGoal() {
+  const v = parseInt(document.getElementById('goal-inp').value);
+  if (v>0) { cfg.goal=v; persist(); renderLog(); }
+}
+
+function importData() {
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.sets)) { showToast('⚠️ Invalid file'); return; }
+      if (!confirm('Import '+data.sets.length+' sets? This will merge with your current data.')) return;
+      // Merge: add any sets whose id doesn't already exist locally
+      const existingIds = new Set(sets.map(s=>s.id));
+      let added = 0;
+      for (const s of data.sets) {
+        if (!existingIds.has(s.id)) { sets.push(s); added++; }
+      }
+      // Merge earned achievements
+      if (data.earned) {
+        for (const [k,v] of Object.entries(data.earned)) {
+          if (!earned[k]) earned[k]=v;
+        }
+      }
+      // Take highest idCtr
+      if (data.sets.length) idCtr = Math.max(idCtr, ...data.sets.map(s=>s.id||0));
+      persist();
+      renderLog();
+      showToast('✅ Imported '+added+' new sets!');
+    } catch(err) { showToast('⚠️ Could not read file'); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function exportData() {
+  const out = {
+    exported: new Date().toISOString(),
+    sets, cfg, earned,
+    summary: { totalXP: totalXP(), level: levelInfo(), streak: streakInfo() }
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));
+  a.download = 'pushups_'+today()+'.json';
+  a.click();
+  showToast('📤 Data exported!');
+}
+
+function resetData() {
+  if (!confirm('⚠️ Delete ALL data — pushups, streaks, achievements — forever?')) return;
+  if (!confirm('Last chance. Really wipe everything?')) return;
+  sets=[]; earned={}; cfg={goal:50}; idCtr=0; persist();
+  renderLog(); renderAchievements();
+  showToast('🗑️ All data cleared');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EVENT WIRING
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('add-btn').addEventListener('click', openModal);
+document.getElementById('confirm-btn').addEventListener('click', confirmModal);
+document.getElementById('cancel-btn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal(); });
+document.getElementById('num-input').addEventListener('keydown', e=>{ if(e.key==='Enter') confirmModal(); if(e.key==='Escape') closeModal(); });
+
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>addSet(parseInt(btn.dataset.n)));
+});
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchScreen(btn.dataset.screen));
+});
+
+document.getElementById('sets-list').addEventListener('click', e=>{
+  const btn = e.target.closest('.set-del');
+  if (btn) deleteSet(parseInt(btn.dataset.id));
+});
+
+document.getElementById('goal-inp').addEventListener('change', updateGoal);
+document.getElementById('export-btn').addEventListener('click', exportData);
+document.getElementById('import-btn').addEventListener('click', importData);
+document.getElementById('import-file').addEventListener('change', handleImport);
+document.getElementById('reset-btn').addEventListener('click', resetData);
+
+window.addEventListener('resize', ()=>{
+  if (document.getElementById('sc-stats').classList.contains('active')) drawBarChart();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════
+restore();
+renderLog();
+</script>
+</body>
+</html>
